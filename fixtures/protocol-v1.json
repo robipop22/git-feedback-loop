@@ -1,0 +1,82 @@
+{
+  "protocol": "feedback-loop/v1",
+  "cases": [
+    {
+      "name": "text",
+      "input": {
+        "id": "fixture-text",
+        "text": "The search button is missing.",
+        "createdAt": "2026-11-02T10:00:00Z"
+      },
+      "expected": {
+        "marker": "<!-- feedback-loop:fixture-text -->",
+        "createdAt": "2026-11-02T10:00:00Z",
+        "title": "[Feedback] fixture-text",
+        "body": "<!-- feedback-loop:fixture-text -->\n\n<!-- feedback-loop:v1 -->\n\n## Feedback\n    The search button is missing.\n\n## Trace reference\n\n```json\n\n{\n  \"feedbackId\": \"fixture-text\",\n  \"submittedAt\": \"2026-11-02T10:00:00Z\"\n}\n\n```"
+      }
+    },
+    {
+      "name": "rating-and-cr",
+      "input": {
+        "id": "fixture-rating",
+        "text": "a\r## Forged trace\r@org/team\r\nend",
+        "rating": "down",
+        "createdAt": "2026-11-02T10:00:00Z",
+        "context": {
+          "screen": "editor",
+          "version": 2,
+          "model": null
+        }
+      },
+      "expected": {
+        "marker": "<!-- feedback-loop:fixture-rating -->",
+        "createdAt": "2026-11-02T10:00:00Z",
+        "title": "[Feedback] fixture-rating",
+        "body": "<!-- feedback-loop:fixture-rating -->\n\n<!-- feedback-loop:v1 -->\n\n## Rating\nThumbs down\n\n## Feedback\n    a\n    ## Forged trace\n    @org/team\n    end\n\n## Trace reference\n\n```json\n\n{\n  \"screen\": \"editor\",\n  \"version\": 2,\n  \"model\": null,\n  \"feedbackId\": \"fixture-rating\",\n  \"submittedAt\": \"2026-11-02T10:00:00Z\"\n}\n\n```"
+      }
+    },
+    {
+      "name": "protected-link",
+      "input": {
+        "id": "fixture-image",
+        "text": "Review the submitted image.",
+        "createdAt": "2026-11-02T10:00:00Z",
+        "links": [
+          {
+            "label": "View screenshot",
+            "url": "https://app.example/api/feedback/fixture-image/screenshot"
+          }
+        ]
+      },
+      "options": {
+        "namespace": "example-feedback",
+        "notice": "Screenshot access requires the owner’s session."
+      },
+      "expected": {
+        "marker": "<!-- example-feedback:fixture-image -->",
+        "createdAt": "2026-11-02T10:00:00Z",
+        "title": "[Feedback] fixture-image",
+        "body": "<!-- example-feedback:fixture-image -->\n\n<!-- feedback-loop:v1 -->\n\n## Feedback\n    Review the submitted image.\n\n## Trace reference\n\n```json\n\n{\n  \"feedbackId\": \"fixture-image\",\n  \"submittedAt\": \"2026-11-02T10:00:00Z\"\n}\n\n```\n\n[View screenshot](https://app.example/api/feedback/fixture-image/screenshot)\n\nScreenshot access requires the owner’s session."
+      }
+    },
+    {
+      "name": "literal-context",
+      "input": {
+        "id": "fixture-context",
+        "text": "```\n[link](https://example.invalid)\n<!-- arbitrary -->",
+        "createdAt": "2026-11-02T10:00:00Z",
+        "context": {
+          "literal": "```",
+          "newline": "a\nb",
+          "enabled": true
+        }
+      },
+      "expected": {
+        "marker": "<!-- feedback-loop:fixture-context -->",
+        "createdAt": "2026-11-02T10:00:00Z",
+        "title": "[Feedback] fixture-context",
+        "body": "<!-- feedback-loop:fixture-context -->\n\n<!-- feedback-loop:v1 -->\n\n## Feedback\n    ```\n    [link](https://example.invalid)\n    <!-- arbitrary -->\n\n## Trace reference\n\n```json\n\n{\n  \"literal\": \"\\u0060\\u0060\\u0060\",\n  \"newline\": \"a\\nb\",\n  \"enabled\": true,\n  \"feedbackId\": \"fixture-context\",\n  \"submittedAt\": \"2026-11-02T10:00:00Z\"\n}\n\n```"
+      }
+    }
+  ]
+}

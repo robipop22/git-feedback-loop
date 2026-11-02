@@ -1,19 +1,28 @@
 {
   "name": "git-feedback-loop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Product feedback, GitHub issue delivery, and a CLI loop for any coding agent.",
-  "type": "module",
+  "homepage": "https://github.com/robipop22/git-feedback-loop#readme",
+  "bugs": {
+    "url": "https://github.com/robipop22/git-feedback-loop/issues"
+  },
   "license": "MIT",
-  "engines": {
-    "node": ">=22"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robipop22/git-feedback-loop.git"
+  },
+  "bin": {
+    "feedback-loop": "./dist/cli.js"
   },
   "files": [
     "dist",
     "docs",
     "examples",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "fixtures"
   ],
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -26,23 +35,17 @@
     "./react": {
       "types": "./dist/react/index.d.ts",
       "default": "./dist/react/index.js"
-    }
+    },
+    "./worklet": "./dist/browser/pcm-capture.worklet.js",
+    "./fixtures/protocol-v1.json": "./fixtures/protocol-v1.json"
   },
-  "bin": {
-    "feedback-loop": "./dist/cli.js"
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/write-worklet.mjs",
     "test": "npm run build && node --test tests/*.test.mjs",
     "prepack": "npm run build"
-  },
-  "peerDependencies": {
-    "react": ">=18"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
@@ -52,15 +55,15 @@
     "react-dom": "^19.3.1",
     "typescript": "^6.0.3"
   },
-  "publishConfig": {
-    "access": "public"
+  "peerDependencies": {
+    "react": ">=18"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/robipop22/git-feedback-loop.git"
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
-  "homepage": "https://github.com/robipop22/git-feedback-loop#readme",
-  "bugs": {
-    "url": "https://github.com/robipop22/git-feedback-loop/issues"
+  "engines": {
+    "node": ">=22"
   }
 }

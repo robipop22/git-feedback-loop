@@ -1,0 +1,27 @@
+export const defaultFeedbackLabels = {
+  title: "Feedback",
+  close: "Close",
+  text: "Describe the problem or suggestion",
+  send: "Send feedback",
+  pending: "Feedback saved. Delivery is pending.",
+  checkStatus: "Check delivery status",
+  attention: "Feedback saved. Delivery requires review.",
+  delivered: "Feedback delivered.",
+  reference: "Reference",
+  error: "The request failed. Retry with the same reference.",
+  fixAndResend: "Edit the feedback and send it again.",
+  privacy: "Exclude private information from your feedback and screenshots.",
+  another: "Send more feedback",
+  record: "Record",
+  conversation: "Start conversation",
+  stop: "Stop recording",
+  retry: "Retry audio",
+  discard: "Discard audio",
+  screenshot: "Capture screen",
+  attach: "Attach screenshot",
+  remove: "Remove screenshot",
+  unavailable: "Delivery is not configured.",
+  speech: "A local speech voice is unavailable.",
+};
+
+export type FeedbackWidgetLabels = typeof defaultFeedbackLabels;
