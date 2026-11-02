@@ -21,6 +21,7 @@ export const deliverClaimedFeedback = async (options: {
   token: string;
   previousCreationAttempted: boolean;
   previousAttempts: number;
+  previousAttentionRequired?: boolean;
   beforeCreate?: () => Promise<void>;
   delivered: (issueUrl: string) => Promise<void>;
   pending: (state: FeedbackPendingState) => Promise<void>;
@@ -50,7 +51,10 @@ export const deliverClaimedFeedback = async (options: {
     await options.pending({
       creationAttempted,
       reason,
-      attentionRequired: reason !== "transient" && options.previousAttempts >= 4,
+      attentionRequired:
+        Boolean(options.previousAttentionRequired) ||
+        (options.previousAttempts >= 4 &&
+          (reason !== "transient" || options.previousCreationAttempted)),
       nextAttemptAt: new Date(Date.now() + retryDelay(options.previousAttempts)),
     });
 };

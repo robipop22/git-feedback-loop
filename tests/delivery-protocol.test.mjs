@@ -105,3 +105,83 @@ test("uncertain, rejected, and bounded-scan outcomes expose an operator signal w
     assert.ok(!JSON.stringify(pending).includes("test-key"));
   }
 });
+
+test("an exhausted deadline does not persist intent or send a creation POST", async () => {
+  let intent = false;
+  let posts = 0;
+  await assert.rejects(
+    deliverFeedbackIssue(issue, "owner/repo", "test-key", {
+      deadlineMs: 100,
+      requestTimeoutMs: 50,
+      request: async (_url, init) => {
+        if (init.method === "POST") posts++;
+        await new Promise((resolve) => setTimeout(resolve, 65));
+        return Response.json([]);
+      },
+      beforeCreate: async () => {
+        intent = true;
+      },
+    }),
+    (error) =>
+      error instanceof FeedbackDeliveryError &&
+      !error.creationMayHaveSucceeded &&
+      error.reason === "transient",
+  );
+  assert.equal(intent, false);
+  assert.equal(posts, 0);
+});
+
+test("invalid local delivery inputs cannot mark a first creation as uncertain", async () => {
+  let pending;
+  await deliverClaimedFeedback({
+    issue,
+    repository: "invalid repository",
+    token: "test-key",
+    previousCreationAttempted: false,
+    previousAttempts: 0,
+    delivered: async () => assert.fail("Unexpected delivery"),
+    pending: async (state) => {
+      pending = state;
+    },
+  });
+  assert.equal(pending.creationAttempted, false);
+  assert.equal(pending.reason, "rejected");
+  for (const input of [
+    { ...issue, marker: "invalid" },
+    { ...issue, createdAt: "not a date" },
+    { ...issue, body: null },
+    { ...issue, title: null },
+  ]) {
+    await assert.rejects(
+      deliverFeedbackIssue(input, "owner/repo", "test-key"),
+      (error) =>
+        error instanceof FeedbackDeliveryError &&
+        !error.creationMayHaveSucceeded &&
+        error.reason === "rejected",
+    );
+  }
+});
+
+test("review signals remain set during a later transient outage", async () => {
+  for (const previous of [
+    { previousCreationAttempted: true },
+    { previousCreationAttempted: false, previousAttentionRequired: true },
+  ]) {
+    let pending;
+    await deliverClaimedFeedback({
+      issue,
+      repository: "owner/repo",
+      token: "test-key",
+      previousAttempts: 5,
+      ...previous,
+      deliver: async () => {
+        throw new FeedbackDeliveryError(false, "transient");
+      },
+      delivered: async () => assert.fail("Unexpected delivery"),
+      pending: async (state) => {
+        pending = state;
+      },
+    });
+    assert.equal(pending.attentionRequired, true);
+  }
+});

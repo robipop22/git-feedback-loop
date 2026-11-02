@@ -118,7 +118,10 @@ Large repositories and old pending records can exceed this bound and require ope
 - An incomplete bounded scan means `scan_limit`. Do not create an unverified duplicate.
 
 Never clear an earlier creation intent after a later rejected request.
-The outbox helper marks non-transient pending outcomes for attention after five attempts.
+The outbox helper marks non-transient or reconcile-only pending outcomes for attention after five attempts.
+Keep an existing review signal set during later outages.
+Validate local inputs before network calls. Reject invalid configuration without setting creation intent.
+Reserve one full request interval before committing intent and again before sending the POST.
 The host must persist this signal and expose an operator path for reconciliation.
 The retry delay grows from 30 seconds to one hour.
 An operator must inspect GitHub before clearing uncertain creation intent.

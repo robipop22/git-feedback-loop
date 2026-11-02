@@ -73,6 +73,7 @@ await deliverClaimedFeedback({
   token: serverToken,
   previousCreationAttempted: claimed.previousCreationAttempted,
   previousAttempts: claimed.previousAttempts,
+  previousAttentionRequired: claimed.attentionRequired,
   beforeCreate: () => store.markCreationIntent(claimed.id, claimed.fence),
   delivered: (issueUrl) => store.markDelivered(claimed.id, claimed.fence, issueUrl),
   pending: (state) => store.defer(claimed.id, claimed.fence, state),
@@ -82,7 +83,9 @@ await deliverClaimedFeedback({
 Existing adapters may continue to persist intent in the claim transaction.
 The callback narrows the interval before the POST but cannot eliminate a crash after the intent commit.
 `pending` includes `reason` and `attentionRequired`.
-Persist both fields. Expose the review signal to operators and in the receipt.
+Persist both fields. Pass the stored review signal back as `previousAttentionRequired`.
+Keep it set until delivery succeeds or an operator clears it.
+Expose the review signal to operators and in the receipt.
 The widget stops automatic polling when a receipt includes `attentionRequired: true`.
 
 Run retries at startup and every 30 seconds.

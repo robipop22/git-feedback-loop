@@ -4,6 +4,7 @@ export const defaultFeedbackLabels = {
   text: "Describe the problem or suggestion",
   send: "Send feedback",
   pending: "Feedback saved. Delivery is pending.",
+  checkStatus: "Check delivery status",
   attention: "Feedback saved. Delivery requires review.",
   delivered: "Feedback delivered.",
   reference: "Reference",

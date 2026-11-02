@@ -194,3 +194,20 @@ test("dead receipt references are removed and organization changes clear the for
     assert.equal(h.container.querySelector("textarea").value, "");
     assert.equal(h.container.querySelector("textarea").disabled, false);
   }));
+
+test("an operator-review receipt can be refreshed after delivery is resolved", async () =>
+  harness(async (h) => {
+    const client = {
+      ...h.defaultClient,
+      async submit(input) {
+        return { id: input.id, status: "pending", configured: true, attentionRequired: true };
+      },
+    };
+    await h.render(client);
+    await h.act(async () => h.button("Feedback").click());
+    await h.type("Synthetic report");
+    await h.act(async () => h.button("Send feedback").click());
+    assert.match(h.container.textContent, /requires review/);
+    await h.act(async () => h.button("Check delivery status").click());
+    assert.match(h.container.textContent, /Feedback delivered/);
+  }));

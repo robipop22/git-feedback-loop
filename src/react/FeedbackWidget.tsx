@@ -157,6 +157,11 @@ export const FeedbackWidget = ({
               <p>
                 {labels.reference}: {receipt.id}
               </p>
+              {receipt.status === "pending" && receipt.attentionRequired ? (
+                <button type="button" onClick={() => void submission.refresh()}>
+                  {labels.checkStatus}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {

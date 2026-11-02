@@ -20,31 +20,60 @@ export type FeedbackDeliveryOptions = {
   request?: typeof fetch;
   allowCreate?: boolean;
   beforeCreate?: () => Promise<void>;
+  deadlineMs?: number;
+  requestTimeoutMs?: number;
 };
 
 export const deliverFeedbackIssue = async (
   input: FeedbackIssue,
   repository: string,
   token: string,
-  { request = fetch, allowCreate = true, beforeCreate }: FeedbackDeliveryOptions = {},
+  {
+    request = fetch,
+    allowCreate = true,
+    beforeCreate,
+    deadlineMs = 20_000,
+    requestTimeoutMs = 8_000,
+  }: FeedbackDeliveryOptions = {},
 ) => {
   if (!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repository))
-    throw new Error("Invalid GitHub repository.");
+    throw new FeedbackDeliveryError(false, "rejected");
   if (
+    !input ||
+    typeof input !== "object" ||
+    typeof input.marker !== "string" ||
+    typeof input.body !== "string" ||
+    typeof input.title !== "string" ||
+    !input.title ||
+    input.title.length > 256 ||
+    typeof input.createdAt !== "string" ||
     !/^<!-- [a-zA-Z0-9_-]{1,80}:[a-zA-Z0-9_-]{1,200} -->$/.test(input.marker) ||
     !input.body.startsWith(input.marker)
   )
-    throw new Error("Invalid feedback issue marker.");
+    throw new FeedbackDeliveryError(false, "rejected");
+  if (
+    !Number.isFinite(Date.parse(input.createdAt)) ||
+    !Number.isSafeInteger(deadlineMs) ||
+    !Number.isSafeInteger(requestTimeoutMs) ||
+    deadlineMs < 1 ||
+    deadlineMs > 20_000 ||
+    requestTimeoutMs < 1 ||
+    requestTimeoutMs > 8_000 ||
+    requestTimeoutMs > deadlineMs
+  ) {
+    throw new FeedbackDeliveryError(false, "rejected");
+  }
+  const started = performance.now();
   let creationMayHaveSucceeded = false;
   let reason: FeedbackPendingReason = "transient";
   let status: number | undefined;
-  const deadline = AbortSignal.timeout(20_000);
+  const deadline = AbortSignal.timeout(deadlineMs);
   const endpoint = `https://api.github.com/repos/${repository}/issues`;
   const call = async (url: string, init: RequestInit = {}) => {
     const response = await request(url, {
       ...init,
       redirect: "error",
-      signal: AbortSignal.any([deadline, AbortSignal.timeout(8_000)]),
+      signal: AbortSignal.any([deadline, AbortSignal.timeout(requestTimeoutMs)]),
       headers: {
         Accept: "application/vnd.github+json",
         Authorization: `Bearer ${token}`,
@@ -94,7 +123,14 @@ export const deliverFeedbackIssue = async (
       );
       if (issues.length < 100 || passedWindow) {
         if (!allowCreate) return null;
+        const requireCreationBudget = () => {
+          if (deadline.aborted || deadlineMs - (performance.now() - started) < requestTimeoutMs) {
+            throw new FeedbackDeliveryError(false, "transient");
+          }
+        };
+        requireCreationBudget();
         await beforeCreate?.();
+        requireCreationBudget();
         creationMayHaveSucceeded = true;
         return issueUrl(
           await call(endpoint, {
