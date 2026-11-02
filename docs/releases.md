@@ -3,7 +3,7 @@
 1. Run `npm ci` from the package checkout.
 2. Run `npm test`.
 3. Check `npm pack --dry-run` for unintended files.
-4. Confirm that the package version is new in the npm registry.
+4. Check that the package version is new in the npm registry.
 5. Run `npm login` with the maintainer's npm account.
 6. Run `npm publish --access public`.
 7. Create the matching GitHub release with the packed artifact.

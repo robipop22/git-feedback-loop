@@ -112,7 +112,7 @@ npm pack --dry-run
 ```
 
 The package was extracted from Medinotes.
-Medinotes uses the same source through a local workspace dependency during development.
+Medinotes consumes the packed GitHub release until the npm registry release is available.
 Clinical rules, database encryption, authentication, translations, and the Windows UI remain in the host application.
 The Windows client continues to use the same HTTP endpoints.
 
