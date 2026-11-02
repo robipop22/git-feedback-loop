@@ -115,3 +115,21 @@ The package was extracted from Medinotes.
 Medinotes uses the same source through a local workspace dependency during development.
 Clinical rules, database encryption, authentication, translations, and the Windows UI remain in the host application.
 The Windows client continues to use the same HTTP endpoints.
+
+## First release
+
+The npm registry release is pending the maintainer's npm sign-in.
+Until that release is published, install the packed artifact from GitHub:
+
+```sh
+npm install https://github.com/robipop22/git-feedback-loop/releases/download/v0.1.0/git-feedback-loop-0.1.0.tgz
+```
+
+To publish from this checkout:
+
+```sh
+npm ci
+npm test
+npm login
+npm publish --access public
+```
