@@ -7,9 +7,13 @@ Node.js 22 or later runs the server modules and CLI.
 
 ## Install
 
+The first release is available as an npm tarball on GitHub.
+
 ```sh
-npm install git-feedback-loop
+npm install https://github.com/robipop22/git-feedback-loop/releases/download/v0.1.0/git-feedback-loop-0.1.0.tgz
 ```
+
+After the maintainer publishes to npm, use `npm install git-feedback-loop`.
 
 Use the `/react` entry for React applications.
 Use the `/browser` entry for another browser framework.
@@ -112,7 +116,7 @@ npm pack --dry-run
 ```
 
 The package was extracted from Medinotes.
-Medinotes consumes the packed GitHub release until the npm registry release is available.
+The Medinotes integration consumes the packed GitHub release until the npm registry release is available.
 Clinical rules, database encryption, authentication, translations, and the Windows UI remain in the host application.
 The Windows client continues to use the same HTTP endpoints.
 
