@@ -7,7 +7,9 @@
 5. Run `npm login` with the maintainer's npm account.
 6. Run `npm publish --access public`.
 7. Create the matching GitHub release with the packed artifact.
-8. Remove the pending-release notice from the README after the registry release succeeds.
+8. Check a fresh install of the exact registry version.
+9. Wait for registry processing if the version is reserved but not installable.
+10. Do not repeat the publish request while npm processes that version.
 
 The package name is `git-feedback-loop`.
 The GitHub repository is `robipop22/git-feedback-loop`.

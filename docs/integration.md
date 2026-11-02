@@ -7,12 +7,12 @@ Implement these routes in your existing authenticated server.
 Check authorization and request origin before accepting a mutation.
 Apply your application's request limits and rate limits.
 
-| Route | Request | Response |
-| --- | --- | --- |
-| `POST /api/feedback` | `{ id, text, screenshot? }` | `{ id, status, configured }` |
-| `GET /api/feedback/:id` | No body | `{ id, status, configured }` |
-| `POST /api/feedback/transcribe` | Multipart `audio` file and `language` | `{ text }` |
-| `POST /api/feedback/summarize` | `{ text }` | `{ summary }` |
+| Route                           | Request                               | Response                                         |
+| ------------------------------- | ------------------------------------- | ------------------------------------------------ |
+| `POST /api/feedback`            | `{ id, text, screenshot? }`           | `{ id, status, configured, attentionRequired? }` |
+| `GET /api/feedback/:id`         | No body                               | `{ id, status, configured, attentionRequired? }` |
+| `POST /api/feedback/transcribe` | Multipart `audio` file and `language` | `{ text }`                                       |
+| `POST /api/feedback/summarize`  | `{ text }`                            | `{ summary }`                                    |
 
 Only the first two routes are required for text feedback.
 Disable `screenshots` when the server does not support attachments.
@@ -58,13 +58,13 @@ The receipt must omit the internal issue URL.
 
 1. Start a transaction.
 2. Lock one due pending row with `FOR UPDATE SKIP LOCKED`, or an equivalent atomic claim.
-3. Preserve the row's previous creation intent and attempt count.
-4. Set `creationAttempted = true` before network I/O.
-5. Increment the attempt count.
-6. Set a delivery lease of at least two minutes.
-7. Commit the transaction.
-8. Call `deliverClaimedFeedback` with the previous values.
-9. Store its delivered or pending result through the callbacks.
+3. Preserve its previous creation intent and attempt count.
+4. Increment the attempt count.
+5. Set a delivery lease of at least two minutes and a unique claim fence.
+6. Commit the transaction.
+7. Call `deliverClaimedFeedback` with the previous values.
+8. Persist creation intent in its awaited `beforeCreate` callback.
+9. Store the delivered or pending result only while the claim fence still matches.
 
 ```ts
 await deliverClaimedFeedback({
@@ -73,10 +73,17 @@ await deliverClaimedFeedback({
   token: serverToken,
   previousCreationAttempted: claimed.previousCreationAttempted,
   previousAttempts: claimed.previousAttempts,
-  delivered: issueUrl => store.markDelivered(claimed.id, issueUrl),
-  pending: state => store.defer(claimed.id, state),
+  beforeCreate: () => store.markCreationIntent(claimed.id, claimed.fence),
+  delivered: (issueUrl) => store.markDelivered(claimed.id, claimed.fence, issueUrl),
+  pending: (state) => store.defer(claimed.id, claimed.fence, state),
 });
 ```
+
+Existing adapters may continue to persist intent in the claim transaction.
+The callback narrows the interval before the POST but cannot eliminate a crash after the intent commit.
+`pending` includes `reason` and `attentionRequired`.
+Persist both fields. Expose the review signal to operators and in the receipt.
+The widget stops automatic polling when a receipt includes `attentionRequired: true`.
 
 Run retries at startup and every 30 seconds.
 The retry delay grows from 30 seconds to one hour.
@@ -107,3 +114,27 @@ You can retain your existing UI and import individual browser helpers.
 `useFeedbackVoice(onText, language, transcribe)` accepts a transcription callback.
 The callback returns text. `onText` returns the optional text for the browser to speak.
 The `language` argument uses a browser language prefix, such as `en` or `sv`.
+
+## Host UI and browser policy
+
+`useFeedbackSubmission({ client, storageKey })` owns retries, receipt restoration, polling, and reset behavior.
+It returns `receipt`, `busy`, `submitted`, `error`, `editableError`, `submit`, `refresh`, and `reset`.
+Build your form with the host's shared UI primitives.
+Disable editing while `submitted` is true. After a definite validation rejection, the hook clears that state.
+Keep editing locked after network errors and retry the immutable stored payload.
+The default widget exposes the same behavior.
+
+Use both the account ID and organization ID in `storageKey` and the component's React `key`.
+A changed storage key also clears draft fields and cancels voice work.
+Hosts should keep their structural `FeedbackClient` object stable across renders.
+
+The worklet asset is exported as `git-feedback-loop/worklet`.
+Vite hosts can import `git-feedback-loop/worklet?url` and pass its same-origin URL as `workletUrl`.
+Other bundlers can copy the asset to their public directory.
+Do not weaken the application's CSP to enable blob scripts.
+
+Voice capture pauses while local speech plays by default.
+Use headphones before enabling `allowBargeIn`.
+Browser echo cancellation does not reliably remove operating-system speech output.
+The package retains a successful transcription when applying its text fails, so retry does not repeat the provider call.
+Host callbacks must ignore or cancel their own pending asynchronous UI updates when the account changes.

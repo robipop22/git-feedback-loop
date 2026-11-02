@@ -1,7 +1,8 @@
 # Agent loop protocol
 
 The coordinator uses `gh api` to read open issues with a routing label.
-It accepts the package's version marker and legacy Medinotes markers.
+It requires the package's version marker.
+Use `--legacy-namespace NAME` to opt into an older application's marker namespace.
 The default routing label is `feedback:ready`.
 Create that label in the destination repository before routing work.
 Add it after a person or triage process approves an issue for development.
@@ -27,12 +28,14 @@ Run the coordinator under your existing service manager for unattended operation
 The coordinator writes a job record before starting the agent.
 It skips unchanged issue titles and bodies on later polls.
 Agent comments and label changes do not cause repeated work.
-A changed title or body creates a new job for that issue.
+A changed title or body produces `changed_since_run` and does not create another job.
+Inspect the existing branch and pull request before approving a replay.
 
 Failed, blocked, and interrupted jobs remain in the state file.
 Inspect their branches and pull requests before a replay.
 Stop the coordinator before removing the selected issue entry from its state file.
-A process termination can leave a `.lock` file.
+Normal SIGINT and SIGTERM shutdown stops the active worker and removes the lock.
+An uncatchable termination or machine failure can leave a `.lock` file.
 Check its recorded PID before removing a stale lock.
 
 ## Agent wrapper
@@ -43,7 +46,12 @@ The wrapper receives one JSON object on stdin:
 {
   "protocol": "feedback-loop/v1",
   "repository": "OWNER/REPO",
-  "issue": { "number": 123, "url": "https://github.com/OWNER/REPO/issues/123", "title": "...", "body": "..." },
+  "issue": {
+    "number": 123,
+    "url": "https://github.com/OWNER/REPO/issues/123",
+    "title": "...",
+    "body": "..."
+  },
   "instructions": ["..."]
 }
 ```
@@ -56,13 +64,17 @@ The agent must follow the application's `AGENTS.md` instructions.
 The wrapper returns exactly one JSON object on stdout:
 
 ```json
-{"status":"needs_review","summary":"Fixed the missing heading. Tests passed.","prUrl":"https://github.com/OWNER/REPO/pull/456"}
+{
+  "status": "needs_review",
+  "summary": "Fixed the missing heading. Tests passed.",
+  "prUrl": "https://github.com/OWNER/REPO/pull/456"
+}
 ```
 
 If the report requires clarification, return:
 
 ```json
-{"status":"blocked","summary":"The report does not identify the affected screen."}
+{ "status": "blocked", "summary": "The report does not identify the affected screen." }
 ```
 
 Write agent logs to stderr.
@@ -72,7 +84,10 @@ A successful agent process is not evidence that a fix is live.
 The agent must open a draft pull request and leave review and release to the application's existing workflow.
 
 An agent process has a 30-minute deadline and a 1 MB stdout limit.
-An agent wrapper must manage its own child processes when it receives a termination signal.
+The coordinator signals the process group on POSIX and uses `taskkill /T` on Windows.
+Wrappers must keep descendants in that group or process tree.
+A wrapper that deliberately detaches descendants defeats process-tree cleanup.
+The coordinator survives a transient GitHub poll failure in watch mode.
 The coordinator records a failure instead of automatically repeating an ambiguous run.
 
 ## Adapter contract
